@@ -13,6 +13,7 @@ import os
 import argparse
 import re
 import sys
+import fnmatch
 
 # ANSI escape codes for colored text
 RED = '\033[91m'
@@ -39,8 +40,11 @@ def find_cpp_comment_style(directory, ignore_patterns, replace=False, target_sty
             if file.endswith(('.c', '.cpp', '.h', '.hpp')):
                 file_path = os.path.join(root, file)
 
-                # Check if file matches any ignore pattern
-                if any(re.match(pattern, file) for pattern in ignore_patterns):
+                # Convert shell-style wildcards to regex patterns
+                regex_patterns = [re.compile(fnmatch.translate(pattern)) for pattern in ignore_patterns]
+
+                # Check if file_path matches any ignore pattern
+                if any(regex_pattern.fullmatch(file_path) for regex_pattern in regex_patterns):
                     continue
 
                 with open(file_path, 'r') as f:
@@ -89,8 +93,11 @@ def find_c_comment_style(directory, ignore_patterns, replace=False, target_style
             if file.endswith(('.c', '.cpp', '.h', '.hpp')):
                 file_path = os.path.join(root, file)
 
-                # Check if file matches any ignore pattern
-                if any(re.match(pattern, file) for pattern in ignore_patterns):
+                # Convert shell-style wildcards to regex patterns
+                regex_patterns = [re.compile(fnmatch.translate(pattern)) for pattern in ignore_patterns]
+
+                # Check if file_path matches any ignore pattern
+                if any(regex_pattern.fullmatch(file_path) for regex_pattern in regex_patterns):
                     continue
                 
                 with open(file_path, 'r') as f:
@@ -152,7 +159,7 @@ def main():
     parser.add_argument('style', choices=['c', 'cpp', 'c++'], help='Specify the desired comment style: "c" for C-style or "cpp" for C++-style.')
     parser.add_argument('directory', type=str, help='The directory to scan for comments.')
     parser.add_argument('-r', '--replace', action='store_true', help='Replace comments to match the specified style.')
-    parser.add_argument('-i', '--ignore', nargs='+', default=[], help='Regex pattern(s) of file(s) to ignore. (ex: -i \'test_.*\\.cpp\' or -i \'test_.*\\.cpp\' \'.*_backup\\.c\' \'old_.*\\.h\')')
+    parser.add_argument('-i', '--ignore', nargs='+', default=[], help='Regex pattern(s) of file(s) to ignore. (ex: -i \'*/objdict/*\'  or -i \'*CO_OD.[c,h]\' or -i \'*CO_OD.c\' \'*CO_OD.h\')')
     args = parser.parse_args()
 
     error_count = 0
