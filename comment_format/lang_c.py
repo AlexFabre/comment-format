@@ -2,7 +2,68 @@ import os
 import re
 import fnmatch
 
-import utils
+from . import utils
+
+def check_comment_spelling(directory):
+    """
+    Check for spelling mistakes in comments found in C source files (.c and .h).
+
+    Parameters:
+        directory (str): The directory to scan for comments.
+
+    Returns:
+        int: The number of spelling mistakes found in comments.
+    """
+
+    utils.log(f'Checking comment spelling...')
+
+    err = 0
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith(('.c', '.h')):
+                file_path = os.path.join(root, file)
+                
+                with open(file_path, 'r') as f:
+                    lines = f.readlines()
+
+                comments = []  # Aggregate all comments here
+
+                for i, line in enumerate(lines):
+                    # Find single-line comments
+                    if '//' in line:
+                        comment_index = line.find('//')
+                        comment_text = line[comment_index+2:].strip()
+                        comments.append(comment_text)
+                    
+                    # Find multi-line C-style comments
+                    elif '/*' in line:
+                        start_index = line.find('/*')
+                        end_index = line.find('*/', start_index)
+                        if end_index != -1:
+                            # Single-line C-style comment
+                            comment_text = line[start_index+2:end_index].strip()
+                            comments.append(comment_text)
+                        else:
+                            # Multi-line C-style comment
+                            comment_lines = [line[start_index+2:].strip()]
+                            i += 1
+                            while i < len(lines) and '*/' not in lines[i]:
+                                comment_lines.append(lines[i].strip())
+                                i += 1
+                            if i < len(lines):
+                                end_index = lines[i].find('*/')
+                                comment_lines.append(lines[i][:end_index].strip())
+                            comment_text = ' '.join(comment_lines)
+                            comments.append(comment_text)
+
+                # Join all comments into a single string separated by newlines
+                aggregated_comments = '\n'.join(comments)
+
+                # Check spelling for all comments at once
+                err += utils.check_spelling(aggregated_comments, file_path)
+                
+    return err
+
 
 def check_comment_style(directory, ignore_patterns, replace=False, target_style=None):
     """
@@ -18,6 +79,9 @@ def check_comment_style(directory, ignore_patterns, replace=False, target_style=
     Returns:
         int: The number of C-style comments found.
     """
+
+    utils.log(f'Checking comment style...')
+
     err = 0
     for root, _, files in os.walk(directory):
         for file in files:

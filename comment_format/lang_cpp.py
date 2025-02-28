@@ -3,7 +3,7 @@ import re
 import fnmatch
 import subprocess
 
-import utils
+from . import utils
 
 def check_comment_style(directory, ignore_patterns, replace=False, target_style=None):
     """
@@ -19,6 +19,10 @@ def check_comment_style(directory, ignore_patterns, replace=False, target_style=
     Returns:
         int: The number of C++-style comments found.
     """
+
+    utils.log(f'Checking comment style...')
+
+
     err = 0
     for root, _, files in os.walk(directory):
         for file in files:
